@@ -80,7 +80,7 @@ void gpioInit(){
 void timerInit(){
     // Configure Timer Module to Up Mode
     // Configure CCR Registers
-    TB3CCR0 = 4096;                         // PWM Period
+    TB3CCR0 = 4095;                         // PWM Period
     TB3CCTL1 = OUTMOD_7;                      // CCR1 reset/set
     TB3CTL = TBSSEL__SMCLK | MC__UP | TBCLR;  // SMCLK, up mode, clear TBR
 
@@ -112,13 +112,9 @@ int readADCSingle(){
 }
 
 /**
-
 * Set LED Brightness on the LED configured from gpioInit. This modifies the
-
 * CCR register based on the input.
-
 * int DutyCycle: Value between 0-100
-
 */
 
 void setLEDBrightness(int DutyCycle)

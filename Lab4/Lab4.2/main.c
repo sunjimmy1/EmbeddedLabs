@@ -14,3 +14,4 @@ int main(void)
         P1OUT ^=BIT6;// For debugger
     }
 }
+
