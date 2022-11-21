@@ -107,7 +107,6 @@ int readADCSingle(){
     //__bis_SR_register(LPM0_bits | GIE);                  // LPM0, ADC_ISR will force exit
     //__no_operation();                                    // For debug only
     while (!(ADCIFG & ADCIFG0));   // Wait for sample to be sampled and converted
-
     return ADCMEM0;//ADC_Result;
 }
 
