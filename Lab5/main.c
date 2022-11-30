@@ -1,8 +1,8 @@
 #include <msp430.h>
 
-#define CALADC_15V_30C  *((unsigned int *)0x1A1A)                 // Temperature Sensor Calibration-30 C
+#define CALADC_15V_30C *((unsigned int *)0x1A1A) // Temperature Sensor Calibration-30 C
 // See device datasheet for TLV table memory mapping
-#define CALADC_15V_85C  *((unsigned int *)0x1A1C)                 // Temperature Sensor Calibration-High Temperature (85 for Industrial, 105 for Extended)
+#define CALADC_15V_85C *((unsigned int *)0x1A1C) // Temperature Sensor Calibration-High Temperature (85 for Industrial, 105 for Extended)
 
 void ConfigureAdc_temp();
 float calculateTemp(float val);
@@ -17,23 +17,23 @@ void main(void)
     float reading5 = 0;
     while (1)
     {
-        int channel = ADCMCTL0 & 0b1111;
-        ADCCTL0 |= ADCENC | ADCSC;      // Sampling and conversion start
+        int channel = ADCMCTL0 & 0b1111; // Bitmasking to obtain the current ADC channel that's being used
+        ADCCTL0 |= ADCENC | ADCSC;       // Sampling and conversion start
         while (!(ADCIFG & ADCIFG0))
-            ;   // Wait for sample to be sampled and converted
+            ; // Wait for sample to be sampled and converted
         switch (channel)
         {
-        case 12:
-            reading12 = ADCMEM0;      // read the converted data into a variable
-            tempDegF = calculateTemp(reading12);
+        case 12:                                 // If channel 12/Internal temperature sensor,
+            reading12 = ADCMEM0;                 // read the converted data into a variable
+            tempDegF = calculateTemp(reading12); // Covnert reading to fahrenheit
             break;
-        case 5:
-            reading5 = ADCMEM0;       // read the converted data into a variable
+        case 5:                 // If channel 5/external thermistor
+            reading5 = ADCMEM0; // read the converted data into a variable
             break;
         default:
             break;
         }
-        __no_operation();   // Only for debug
+        __no_operation(); // Only for debug
     }
 }
 
@@ -44,15 +44,19 @@ void ConfigureAdc_temp()
     P1SEL1 |= BIT5;
     PM5CTL0 &= ~LOCKLPM5;
 
-    ADCCTL0 |= ADCSHT_8 | ADCON;                       // ADCON, S&H=16 ADC clks
-    ADCCTL1 |= ADCSHP | ADCCONSEQ_1; // ADTBSSEL__SMCLK CCLK = MODOSC; sampling timer
-    ADCCTL2 &= ~ADCRES;                                // clear ADCRES in ADCCTL
-    ADCCTL2 |= ADCRES_2;                            // 12-bit conversion results
-    ADCMCTL0 |= ADCSREF_1 | ADCINCH_12;        // A1 ADC input select; Vref=AVCC
-    ADCIE |= ADCIE0;                       // Enable ADC conv complete interrupt
+    ADCCTL0 |= ADCSHT_8 | ADCON;     // ADCON, S&H=16 ADC clks
+    ADCCTL1 |= ADCSHP | ADCCONSEQ_1; // sampling timer
+    /*
+    ADCCONSEQ_1 sets the sampling mode to start at the specified channel and
+    decrement after each conversion until channel 0, then restart at the specified input channel
+    */
+    ADCCTL2 &= ~ADCRES;                 // clear ADCRES in ADCCTL
+    ADCCTL2 |= ADCRES_2;                // 12-bit conversion results
+    ADCMCTL0 |= ADCSREF_1 | ADCINCH_12; // A1 ADC input select; Vref=AVCC
+    ADCIE |= ADCIE0;                    // Enable ADC conv complete interrupt
 
-// Configure reference
-    PMMCTL0_H = PMMPW_H;                             // Unlock the PMM registers
+    // Configure reference
+    PMMCTL0_H = PMMPW_H;             // Unlock the PMM registers
     PMMCTL2 |= INTREFEN | TSENSOREN; // Enable internal reference and temperature sensor
 }
 
@@ -60,8 +64,7 @@ float calculateTemp(float temp)
 {
     volatile float IntDegF;
     volatile float IntDegC;
-    IntDegC = (temp - CALADC_15V_30C) * (85 - 30)
-            / (CALADC_15V_85C - CALADC_15V_30C) + 30;
+    IntDegC = (temp - CALADC_15V_30C) * (85 - 30) / (CALADC_15V_85C - CALADC_15V_30C) + 30;
     // Temperature in Fahrenheit
     // Tf = (9/5)*Tc | 32
     IntDegF = 9 * IntDegC / 5 + 32;
